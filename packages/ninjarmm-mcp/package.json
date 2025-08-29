@@ -1,0 +1,35 @@
+{
+  "name": "@adamhancock/ninjarmm-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for NinjaOne RMM API integration",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "inspector": "npx @modelcontextprotocol/inspector tsx --env-file=.env src/index.ts",
+    "prepare": "npm run build"
+  },
+  "bin": {
+    "ninjarmm-mcp": "dist/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "ninjaone",
+    "ninjarmm",
+    "rmm",
+    "monitoring"
+  ],
+  "author": "Adam Hancock",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "tsx": "^4.20.0",
+    "typescript": "^5.7.2"
+  },
+  "packageManager": "pnpm@10.13.1"
+}

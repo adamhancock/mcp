@@ -1,0 +1,27 @@
+{
+  "name": "@adamhancock/connectwisermm-mcp",
+  "version": "0.1.0",
+  "description": "ConnectWise RMM MCP Server",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc && cp src/partnerEndpoints7-17.yml dist/",
+    "watch": "tsc --watch",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["mcp", "connectwise", "rmm"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "js-yaml": "^4.1.0"
+  },
+  "bin": {
+    "connectwisermm-mcp": "dist/index.js"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.14.2",
+    "typescript": "^5.4.5"
+  },
+  "packageManager": "pnpm@10.13.1"
+}

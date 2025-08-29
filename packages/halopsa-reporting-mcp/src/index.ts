@@ -159,7 +159,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           const escapedFilter = filter.replace(/'/g, "''");
           sql += ` WHERE LOWER(Name) LIKE '%${escapedFilter.toLowerCase()}%'`;
         }
-        console.error(`Fetching tables with query: ${sql}`);
         
         const result = await haloPSAClient.executeQuery(sql);
         
@@ -211,7 +210,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           sql += ' WHERE ' + conditions.join(' AND ');
         }
         
-        console.error(`Fetching columns with query: ${sql}`);
         
         const result = await haloPSAClient.executeQuery(sql);
         
@@ -267,8 +265,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'halopsa_query': {
         const { sql } = args as any;
         
-        // Log the query for debugging
-        console.error(`Executing query: ${sql}`);
         
         const result = await haloPSAClient.executeQuery(sql);
         
@@ -301,7 +297,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         FROM information_schema.columns
         WHERE LOWER(Table_name) = '${escapedTable.toLowerCase()}'`;
         
-        console.error(`Fetching table info with query: ${sql}`);
         
         const result = await haloPSAClient.executeQuery(sql);
         
@@ -432,20 +427,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
   const transport = new StdioServerTransport();
   
-  console.error('HaloPSA Reporting MCP Server starting...');
-  console.error(`Connected to: ${config.url}`);
-  console.error(`Tenant: ${config.tenant}`);
-  
-  // Test connection
-  const connected = await haloPSAClient.testConnection();
-  if (connected) {
-    console.error('Successfully connected to HaloPSA API');
-  } else {
-    console.error('Warning: Could not verify connection to HaloPSA API');
-  }
+  // Test connection silently
+  await haloPSAClient.testConnection();
   
   await server.connect(transport);
-  console.error('Server running on stdio');
 }
 
 main().catch((error) => {

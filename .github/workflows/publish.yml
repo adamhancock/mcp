@@ -90,8 +90,8 @@ jobs:
           PACKAGE_NAME=$(node -p "require('./package.json').name")
           VERSION=$(node -p "require('./package.json').version")
           
-          # Clean package name for Docker (remove @ and org prefix)
-          DOCKER_IMAGE_NAME=$(echo "$PACKAGE_NAME" | sed 's/@[^/]*\///g')
+          # Clean package name for Docker (remove @org/ prefix)
+          DOCKER_IMAGE_NAME=$(echo "$PACKAGE_NAME" | sed 's|^@[^/]*/||')
           
           # Build and push Docker image
           docker buildx build \

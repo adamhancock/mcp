@@ -135,7 +135,7 @@ jobs:
                 
                 # Build and push Docker image
                 PKG_FOLDER=$(basename "$pkg_dir")
-                DOCKER_IMAGE_NAME=$(echo "$PACKAGE_NAME" | sed 's/@//g' | sed 's/\//-/g')
+                DOCKER_IMAGE_NAME="${PACKAGE_NAME#@*/}"
                 
                 cd ../..
                 docker buildx build \
@@ -181,7 +181,7 @@ jobs:
                 
                 # Build and push Docker image
                 PKG_FOLDER=$(basename "$pkg_dir")
-                DOCKER_IMAGE_NAME=$(echo "$PACKAGE_NAME" | sed 's/@//g' | sed 's/\//-/g')
+                DOCKER_IMAGE_NAME="${PACKAGE_NAME#@*/}"
                 
                 cd ../..
                 docker buildx build \

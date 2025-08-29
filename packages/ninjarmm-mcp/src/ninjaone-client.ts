@@ -120,6 +120,65 @@ export class NinjaOneClient {
     return this.request(`/v2/organization/${orgId}/devices?${params}`);
   }
 
+  // Enhanced device search with filter builder
+  async searchDevices(
+    hostname?: string, 
+    status?: string, 
+    os?: string, 
+    organization?: string, 
+    location?: string, 
+    deviceType?: string,
+    pageSize = 25, 
+    after?: string
+  ) {
+    const filters: string[] = [];
+    
+    if (hostname) {
+      filters.push(`systemName contains "${hostname}"`);
+    }
+    if (status) {
+      const statusMap: Record<string, string> = {
+        'ONLINE': 'false',
+        'OFFLINE': 'true', 
+        'STALE': 'true'
+      };
+      const offlineValue = statusMap[status.toUpperCase()];
+      if (offlineValue !== undefined) {
+        filters.push(`offline = ${offlineValue}`);
+      }
+    }
+    if (os) {
+      filters.push(`os contains "${os}"`);
+    }
+    if (organization) {
+      // Handle both numeric ID and string name
+      if (/^\d+$/.test(organization)) {
+        filters.push(`organizationId = ${organization}`);
+      } else {
+        filters.push(`organizationName contains "${organization}"`);
+      }
+    }
+    if (location) {
+      // Handle both numeric ID and string name  
+      if (/^\d+$/.test(location)) {
+        filters.push(`locationId = ${location}`);
+      } else {
+        filters.push(`locationName contains "${location}"`);
+      }
+    }
+    if (deviceType) {
+      filters.push(`nodeClass = "${deviceType}"`);
+    }
+
+    const params = new URLSearchParams({ pageSize: pageSize.toString() });
+    if (after) params.append('after', after);
+    if (filters.length > 0) {
+      params.append('df', filters.join(' AND '));
+    }
+    
+    return this.request(`/v2/devices?${params}`);
+  }
+
   // Alerts
   async getAlerts(status?: string, since?: string) {
     const params = new URLSearchParams();
@@ -272,16 +331,171 @@ export class NinjaOneClient {
     return this.request(url, options);
   }
 
-  // Fetch the NinjaOne API schema
-  async getApiSchema() {
+  // Get API schema overview with path summary
+  async getApiSchemaOverview() {
     try {
       const response = await fetch('https://app.ninjarmm.com/apidocs/NinjaRMM-API-v2.json');
       if (!response.ok) {
         throw new Error(`Failed to fetch API schema: ${response.status} ${response.statusText}`);
       }
-      return response.json();
+      const schema = await response.json();
+
+      // Group paths by category and extract basic info
+      const pathGroups: Record<string, string[]> = {};
+      const allPaths: { path: string; methods: string[]; summary?: string }[] = [];
+
+      if (schema.paths) {
+        Object.entries(schema.paths).forEach(([path, pathObj]: [string, any]) => {
+          const methods: string[] = [];
+          let summary = '';
+
+          if (pathObj && typeof pathObj === 'object') {
+            Object.entries(pathObj).forEach(([method, methodObj]: [string, any]) => {
+              methods.push(method.toUpperCase());
+              if (!summary && methodObj?.summary) {
+                summary = methodObj.summary;
+              }
+            });
+          }
+
+          allPaths.push({ path, methods, summary });
+
+          // Categorize by path pattern
+          const category = this.categorizeApiPath(path);
+          if (!pathGroups[category]) {
+            pathGroups[category] = [];
+          }
+          pathGroups[category].push(path);
+        });
+      }
+
+      return {
+        info: schema.info,
+        servers: schema.servers,
+        totalPaths: allPaths.length,
+        pathGroups,
+        allPaths: allPaths.slice(0, 100), // Limit to first 100 for overview
+        message: "Use ninjaone_get_api_endpoint_details with a specific path to get full endpoint information"
+      };
     } catch (error) {
-      throw new Error('Failed to fetch NinjaOne API schema');
+      throw new Error('Failed to fetch NinjaOne API schema overview');
     }
+  }
+
+  // Get detailed information for specific API endpoints
+  async getApiEndpointDetails(
+    pathPattern: string, 
+    summaryOnly: boolean = false,
+    includeSchemas: boolean = true,
+    maxEndpoints: number = 10,
+    includeExamples: boolean = false
+  ) {
+    try {
+      const response = await fetch('https://app.ninjarmm.com/apidocs/NinjaRMM-API-v2.json');
+      if (!response.ok) {
+        throw new Error(`Failed to fetch API schema: ${response.status} ${response.statusText}`);
+      }
+      const schema = await response.json();
+
+      const matchingPaths: any = {};
+      const pathEntries = Object.entries(schema.paths || {});
+      let matchCount = 0;
+      
+      // Find matching paths and limit results
+      for (const [path, pathObj] of pathEntries) {
+        if (matchCount >= Math.min(maxEndpoints, 50)) break; // Cap at 50 max
+        
+        if (path.toLowerCase().includes(pathPattern.toLowerCase())) {
+          if (summaryOnly) {
+            // Return only basic info for summary mode
+            const methods: string[] = [];
+            let summary = '';
+            
+            if (pathObj && typeof pathObj === 'object') {
+              Object.entries(pathObj).forEach(([method, methodObj]: [string, any]) => {
+                methods.push(method.toUpperCase());
+                if (!summary && methodObj?.summary) {
+                  summary = methodObj.summary;
+                }
+              });
+            }
+            
+            matchingPaths[path] = { methods, summary };
+          } else {
+            // Filter the path object based on options
+            const filteredPathObj: any = {};
+            
+            if (pathObj && typeof pathObj === 'object') {
+              Object.entries(pathObj).forEach(([method, methodObj]: [string, any]) => {
+                const filteredMethodObj: any = {
+                  summary: methodObj?.summary,
+                  operationId: methodObj?.operationId,
+                  tags: methodObj?.tags
+                };
+                
+                if (includeSchemas) {
+                  filteredMethodObj.parameters = methodObj?.parameters;
+                  filteredMethodObj.requestBody = methodObj?.requestBody;
+                  filteredMethodObj.responses = methodObj?.responses;
+                }
+                
+                if (includeExamples && methodObj?.examples) {
+                  filteredMethodObj.examples = methodObj.examples;
+                }
+                
+                filteredPathObj[method] = filteredMethodObj;
+              });
+            }
+            
+            matchingPaths[path] = filteredPathObj;
+          }
+          matchCount++;
+        }
+      }
+
+      const result: any = {
+        pathPattern,
+        matchingPaths,
+        matchCount,
+        totalMatches: pathEntries.filter(([path]) => 
+          path.toLowerCase().includes(pathPattern.toLowerCase())
+        ).length,
+        limited: matchCount >= Math.min(maxEndpoints, 50)
+      };
+
+      // Only include components if schemas are requested and not in summary mode
+      if (includeSchemas && !summaryOnly && matchCount > 0) {
+        // Include only referenced components to reduce size
+        result.components = {
+          schemas: schema.components?.schemas ? 
+            Object.fromEntries(
+              Object.entries(schema.components.schemas).slice(0, 20)
+            ) : undefined
+        };
+      }
+
+      return result;
+    } catch (error) {
+      throw new Error('Failed to fetch NinjaOne API endpoint details');
+    }
+  }
+
+  private categorizeApiPath(path: string): string {
+    if (path.includes('/device')) return 'Device Management';
+    if (path.includes('/organization')) return 'Organization Management';
+    if (path.includes('/alert')) return 'Alert Management';
+    if (path.includes('/policy') || path.includes('/policies')) return 'Policy Management';
+    if (path.includes('/software')) return 'Software Management';
+    if (path.includes('/patch')) return 'Patch Management';
+    if (path.includes('/script')) return 'Script Management';
+    if (path.includes('/job')) return 'Job Management';
+    if (path.includes('/maintenance')) return 'Maintenance Management';
+    if (path.includes('/backup')) return 'Backup Management';
+    if (path.includes('/antivirus')) return 'Antivirus Management';
+    if (path.includes('/user')) return 'User Management';
+    if (path.includes('/location')) return 'Location Management';
+    if (path.includes('/activity') || path.includes('/activities')) return 'Activity Management';
+    if (path.includes('/webhook')) return 'Webhook Management';
+    return 'Other';
   }
 }

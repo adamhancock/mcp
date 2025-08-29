@@ -71,7 +71,10 @@ const tools: Tool[] = [
       properties: {
         pageSize: { type: 'number', description: 'Number of results per page (default: 25, max: 300)' },
         after: { type: 'string', description: 'Pagination cursor for getting the next page of results' },
-        df: { type: 'string', description: 'Device filter query (e.g., "status:online", "os:Windows", "organization:123")' }
+        df: { 
+          type: 'string', 
+          description: 'Device filter query using NinjaRMM syntax. Examples: "hostname contains VDIPool", "status = ONLINE", "organization = 123", "os contains Windows". Operators: =, !=, contains, "not contains", >, <, >=, <=. Fields: hostname, status, organization, os, last_logged_in_user, device_type, location, ip_address, etc.' 
+        }
       }
     }
   },
@@ -301,11 +304,66 @@ const tools: Tool[] = [
     }
   },
   {
-    name: 'ninjaone_get_api_schema',
-    description: 'Retrieve the complete NinjaOne API OpenAPI specification with all available endpoints, HTTP methods, parameters, and response schemas for API discovery',
+    name: 'ninjaone_get_api_schema_overview',
+    description: 'Get an overview of the NinjaOne API schema including available endpoint categories, path counts, and basic endpoint information.',
     inputSchema: {
       type: 'object',
       properties: {}
+    }
+  },
+  {
+    name: 'ninjaone_get_api_endpoint_details',
+    description: 'Get detailed information for specific API endpoints matching a path pattern (e.g., "policy", "patch", "device/{id}/software"). Supports flexible filtering to control response size and detail level. Use summaryOnly for quick exploration, disable schemas for smaller responses, or limit maxEndpoints for focused results.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        pathPattern: { 
+          type: 'string', 
+          description: 'Path pattern to match endpoints (e.g., "policy", "patch", "device", "maintenance")'
+        },
+        summaryOnly: {
+          type: 'boolean',
+          description: 'Return only basic endpoint information (path, methods, summary) without detailed schemas - ideal for quick API exploration'
+        },
+        includeSchemas: {
+          type: 'boolean',
+          description: 'Include detailed request/response schemas (default: true, set to false to significantly reduce response size)'
+        },
+        maxEndpoints: {
+          type: 'number',
+          description: 'Maximum number of endpoints to return (default: 10, max: 50) - helps manage response size'
+        },
+        includeExamples: {
+          type: 'boolean',
+          description: 'Include request/response examples (default: false to keep responses smaller)'
+        }
+      },
+      required: ['pathPattern']
+    }
+  },
+  {
+    name: 'ninjaone_search_devices',
+    description: 'Search for devices using common filters with simplified syntax. Automatically builds proper filter queries.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        hostname: { type: 'string', description: 'Search by hostname (partial match)' },
+        status: { 
+          type: 'string', 
+          enum: ['ONLINE', 'OFFLINE', 'STALE'],
+          description: 'Filter by device status' 
+        },
+        os: { type: 'string', description: 'Search by operating system (partial match)' },
+        organization: { type: 'string', description: 'Organization name or ID' },
+        location: { type: 'string', description: 'Location name or ID' },
+        deviceType: { 
+          type: 'string',
+          enum: ['WINDOWS_WORKSTATION', 'WINDOWS_SERVER', 'MAC', 'LINUX'],
+          description: 'Filter by device type'
+        },
+        pageSize: { type: 'number', description: 'Number of results per page (default: 25, max: 300)' },
+        after: { type: 'string', description: 'Pagination cursor for getting the next page of results' }
+      }
     }
   },
   {
@@ -431,8 +489,29 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'ninjaone_run_script':
         result = await ninjaClient.runScript(getArg('deviceId'), getArg('scriptId'), getArg('parameters'));
         break;
-      case 'ninjaone_get_api_schema':
-        result = await ninjaClient.getApiSchema();
+      case 'ninjaone_get_api_schema_overview':
+        result = await ninjaClient.getApiSchemaOverview();
+        break;
+      case 'ninjaone_get_api_endpoint_details':
+        result = await ninjaClient.getApiEndpointDetails(
+          getArg('pathPattern'),
+          getArg('summaryOnly', false),
+          getArg('includeSchemas', true),
+          getArg('maxEndpoints', 10),
+          getArg('includeExamples', false)
+        );
+        break;
+      case 'ninjaone_search_devices':
+        result = await ninjaClient.searchDevices(
+          getArg('hostname'), 
+          getArg('status'), 
+          getArg('os'), 
+          getArg('organization'), 
+          getArg('location'), 
+          getArg('deviceType'),
+          getArg('pageSize'), 
+          getArg('after')
+        );
         break;
       case 'ninjaone_api_call':
         result = await ninjaClient.makeApiCall(getArg('path'), getArg('method'), getArg('body'), getArg('queryParams'));

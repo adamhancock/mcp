@@ -10,35 +10,12 @@ An MCP (Model Context Protocol) server that provides access to HaloPSA's reporti
 - 📋 Complete database schema with 800+ tables
 - 🤖 AI-friendly query building assistance
 
-## Setup
+## Installation
 
-### 1. Install Dependencies
-
-```bash
-pnpm install
-```
-
-### 2. Configure Environment
-
-Copy `.env.example` to `.env` and fill in your HaloPSA credentials:
+Install the package from npm:
 
 ```bash
-cp .env.example .env
-```
-
-Edit `.env` with your credentials:
-
-```env
-HALOPSA_URL=https://your-instance.halopsa.com
-HALOPSA_CLIENT_ID=your-client-id
-HALOPSA_CLIENT_SECRET=your-client-secret
-HALOPSA_TENANT=your-tenant
-```
-
-### 3. Build the Project
-
-```bash
-pnpm run build
+npm install -g @adamhancock/halopsa-reporting-mcp
 ```
 
 ## Usage with Claude Desktop
@@ -49,8 +26,8 @@ Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/
 {
   "mcpServers": {
     "halopsa-reporting": {
-      "command": "node",
-      "args": ["/path/to/halopsa-reporting-mcp/dist/index.js"],
+      "command": "npx",
+      "args": ["@adamhancock/halopsa-reporting-mcp"],
       "env": {
         "HALOPSA_URL": "https://your-instance.halopsa.com",
         "HALOPSA_CLIENT_ID": "your-client-id",
@@ -64,44 +41,41 @@ Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/
 
 ## Available Tools
 
+### `halopsa_list_tables`
+
+List all available tables in the HaloPSA database:
+
+```typescript
+{
+  filter: "fault"  // Optional: filter tables by name
+}
+```
+
+### `halopsa_list_columns`
+
+List all columns across all tables or for a specific table:
+
+```typescript
+{
+  tableName: "FAULTS",  // Optional: specific table
+  columnFilter: "email"  // Optional: filter columns by name
+}
+```
+
 ### `halopsa_query`
 
 Execute SQL queries against the HaloPSA database:
 
 ```typescript
 {
-  sql: "SELECT * FROM FAULTS WHERE Status = 1 LIMIT 10",
-  loadReportOnly: true
+  sql: "SELECT * FROM FAULTS WHERE Status = 1 LIMIT 10"
 }
-```
-
-### `halopsa_schema_search`
-
-Search the database schema:
-
-```typescript
-// Find tables
-{
-  searchType: "tables",
-  keywords: ["ticket", "fault"]
-}
-
-// Find columns
-{
-  searchType: "columns",
-  keywords: ["email", "user"]
-}
-
-// Get query suggestions
-{
-  searchType: "suggestions",
-  queryDescription: "open tickets for this week"
-}
+// loadReportOnly is automatically set to true by default
 ```
 
 ### `halopsa_table_info`
 
-Get detailed information about a table:
+Get detailed information about a specific table including all columns, data types, and relationships:
 
 ```typescript
 {
@@ -111,15 +85,15 @@ Get detailed information about a table:
 
 ### `halopsa_build_query`
 
-Build SQL queries programmatically:
+Build SQL queries programmatically with a helper:
 
 ```typescript
 {
   tableName: "FAULTS",
-  columns: ["Faultid", "username", "Symptom"],
-  conditions: { "Status": 1 },
-  orderBy: "datereported DESC",
-  limit: 10
+  columns: ["Faultid", "username", "Symptom"],  // Optional: defaults to all columns
+  conditions: { "Status": 1 },  // Optional: WHERE conditions
+  orderBy: "datereported DESC",  // Optional: ORDER BY clause
+  limit: 10  // Optional: LIMIT clause
 }
 ```
 

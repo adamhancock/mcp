@@ -6,10 +6,6 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { HaloPSAClient, HaloPSAConfig } from './halopsa-client.js';
-import dotenv from 'dotenv';
-
-// Load environment variables
-dotenv.config();
 
 // Initialize HaloPSA client with environment variables
 const config: HaloPSAConfig = {

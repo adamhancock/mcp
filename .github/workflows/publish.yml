@@ -91,7 +91,8 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           
           # Clean package name for Docker (remove @org/ prefix)
-          DOCKER_IMAGE_NAME=$(echo "$PACKAGE_NAME" | sed 's|^@[^/]*/||')
+          # Example: @adamhancock/halopsa-reporting-mcp -> halopsa-reporting-mcp
+          DOCKER_IMAGE_NAME="${PACKAGE_NAME#@*/}"  # Remove everything up to and including the first /
           
           # Build and push Docker image
           docker buildx build \

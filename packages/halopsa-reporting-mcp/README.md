@@ -12,13 +12,29 @@ An MCP (Model Context Protocol) server that provides access to HaloPSA's reporti
 
 ## Installation
 
+### NPM
+
 Install the package from npm:
 
 ```bash
 npm install -g @adamhancock/halopsa-reporting-mcp
 ```
 
+### Docker
+
+Pull and run the Docker image:
+
+```bash
+docker run -e HALOPSA_URL=https://your-instance.halopsa.com \
+  -e HALOPSA_CLIENT_ID=your-client-id \
+  -e HALOPSA_CLIENT_SECRET=your-client-secret \
+  -e HALOPSA_TENANT=your-tenant \
+  ghcr.io/adamhancock/halopsa-reporting-mcp:latest
+```
+
 ## Usage with Claude Desktop
+
+### Using NPM Package
 
 Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 
@@ -34,6 +50,30 @@ Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/
         "HALOPSA_CLIENT_SECRET": "your-client-secret",
         "HALOPSA_TENANT": "your-tenant"
       }
+    }
+  }
+}
+```
+
+### Using Docker
+
+Add to your Claude Desktop configuration:
+
+```json
+{
+  "mcpServers": {
+    "halopsa-reporting": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "-e", "HALOPSA_URL=https://your-instance.halopsa.com",
+        "-e", "HALOPSA_CLIENT_ID=your-client-id",
+        "-e", "HALOPSA_CLIENT_SECRET=your-client-secret",
+        "-e", "HALOPSA_TENANT=your-tenant",
+        "ghcr.io/adamhancock/halopsa-reporting-mcp:latest"
+      ]
     }
   }
 }

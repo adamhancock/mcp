@@ -19,6 +19,9 @@ jobs:
     permissions:
       contents: write
       packages: write
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_PREFIX: ${{ github.repository_owner }}
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
@@ -53,6 +56,16 @@ jobs:
             exit 1
           fi
 
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@5f4866a30a54f16a52d2ecb4a3898e9e424939cf # v3.3.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@39a1a82492fd1ad19af19d61b5f748e4cb6cd1af # v3.7.1
+
       - name: Publish specific package
         if: github.event.inputs.package
         run: |
@@ -69,6 +82,25 @@ jobs:
           git push origin "$TAG"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Build and push Docker image for specific package
+        if: github.event.inputs.package
+        run: |
+          cd packages/${{ github.event.inputs.package }}
+          PACKAGE_NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          
+          # Clean package name for Docker (remove @ and org prefix)
+          DOCKER_IMAGE_NAME=$(echo "$PACKAGE_NAME" | sed 's/@[^/]*\///g')
+          
+          # Build and push Docker image
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --build-arg PACKAGE_NAME=${{ github.event.inputs.package }} \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${DOCKER_IMAGE_NAME}:${VERSION} \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${DOCKER_IMAGE_NAME}:latest \
+            --push \
+            ../..
 
       - name: Publish changed packages
         if: github.event_name == 'push' && !github.event.inputs.package
@@ -99,6 +131,20 @@ jobs:
                 TAG="${PACKAGE_NAME}@${CURRENT_VERSION}"
                 git tag -a "$TAG" -m "Release $TAG"
                 git push origin "$TAG"
+                
+                # Build and push Docker image
+                PKG_FOLDER=$(basename "$pkg_dir")
+                DOCKER_IMAGE_NAME=$(echo "$PACKAGE_NAME" | sed 's/@//g' | sed 's/\//-/g')
+                
+                cd ../..
+                docker buildx build \
+                  --platform linux/amd64,linux/arm64 \
+                  --build-arg PACKAGE_NAME=${PKG_FOLDER} \
+                  --tag ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${DOCKER_IMAGE_NAME}:${CURRENT_VERSION} \
+                  --tag ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${DOCKER_IMAGE_NAME}:latest \
+                  --push \
+                  .
+                cd "$pkg_dir"
               else
                 echo "Version $CURRENT_VERSION already published, skipping"
               fi
@@ -131,6 +177,20 @@ jobs:
                 TAG="${PACKAGE_NAME}@${CURRENT_VERSION}"
                 git tag -a "$TAG" -m "Release $TAG"
                 git push origin "$TAG"
+                
+                # Build and push Docker image
+                PKG_FOLDER=$(basename "$pkg_dir")
+                DOCKER_IMAGE_NAME=$(echo "$PACKAGE_NAME" | sed 's/@//g' | sed 's/\//-/g')
+                
+                cd ../..
+                docker buildx build \
+                  --platform linux/amd64,linux/arm64 \
+                  --build-arg PACKAGE_NAME=${PKG_FOLDER} \
+                  --tag ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${DOCKER_IMAGE_NAME}:${CURRENT_VERSION} \
+                  --tag ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${DOCKER_IMAGE_NAME}:latest \
+                  --push \
+                  .
+                cd "$pkg_dir"
               else
                 echo "$PACKAGE_NAME v$CURRENT_VERSION already published, skipping"
               fi

@@ -117,6 +117,12 @@ jobs:
           # Publish each changed package
           for pkg_dir in $CHANGED_PACKAGES; do
             if [ -d "$pkg_dir" ]; then
+              # Skip mcp-decorators as it's internal only
+              if [ "$(basename "$pkg_dir")" = "mcp-decorators" ]; then
+                echo "Skipping internal package: $pkg_dir"
+                continue
+              fi
+              
               echo "Publishing $pkg_dir"
               cd "$pkg_dir"
               
@@ -162,6 +168,12 @@ jobs:
           # Publish all packages with version changes
           for pkg_dir in packages/*; do
             if [ -d "$pkg_dir" ] && [ -f "$pkg_dir/package.json" ]; then
+              # Skip mcp-decorators as it's internal only
+              if [ "$(basename "$pkg_dir")" = "mcp-decorators" ]; then
+                echo "Skipping internal package: $pkg_dir"
+                continue
+              fi
+              
               cd "$pkg_dir"
               
               PACKAGE_NAME=$(node -p "require('./package.json').name")

@@ -27,7 +27,7 @@ importers:
         specifier: ^5.4.5
         version: 5.9.2
 
-  packages/halopsa-reporting-mcp:
+  packages/halopsa-mcp:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.17.4

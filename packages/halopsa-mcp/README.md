@@ -1,6 +1,6 @@
-# HaloPSA Reporting MCP Server
+# HaloPSA MCP Server
 
-An MCP (Model Context Protocol) server that provides access to HaloPSA's reporting API, allowing AI assistants to query and analyze HaloPSA data intelligently.
+An MCP (Model Context Protocol) server that provides access to HaloPSA's reporting and REST APIs, allowing AI assistants to query and analyze HaloPSA data intelligently.
 
 ## Features
 
@@ -20,7 +20,7 @@ An MCP (Model Context Protocol) server that provides access to HaloPSA's reporti
 Install the package from npm:
 
 ```bash
-npm install -g @adamhancock/halopsa-reporting-mcp
+npm install -g @adamhancock/halopsa-mcp
 ```
 
 ### Docker
@@ -32,7 +32,7 @@ docker run -e HALOPSA_URL=https://your-instance.halopsa.com \
   -e HALOPSA_CLIENT_ID=your-client-id \
   -e HALOPSA_CLIENT_SECRET=your-client-secret \
   -e HALOPSA_TENANT=your-tenant \
-  ghcr.io/adamhancock/halopsa-reporting-mcp:latest
+  ghcr.io/adamhancock/halopsa-mcp:latest
 ```
 
 ## Usage with Claude Desktop
@@ -44,9 +44,9 @@ Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/
 ```json
 {
   "mcpServers": {
-    "halopsa-reporting": {
+    "halopsa": {
       "command": "npx",
-      "args": ["@adamhancock/halopsa-reporting-mcp"],
+      "args": ["@adamhancock/halopsa-mcp"],
       "env": {
         "HALOPSA_URL": "https://your-instance.halopsa.com",
         "HALOPSA_CLIENT_ID": "your-client-id",
@@ -65,7 +65,7 @@ Add to your Claude Desktop configuration:
 ```json
 {
   "mcpServers": {
-    "halopsa-reporting": {
+    "halopsa": {
       "command": "docker",
       "args": [
         "run",
@@ -75,7 +75,7 @@ Add to your Claude Desktop configuration:
         "-e", "HALOPSA_CLIENT_ID=your-client-id",
         "-e", "HALOPSA_CLIENT_SECRET=your-client-secret",
         "-e", "HALOPSA_TENANT=your-tenant",
-        "ghcr.io/adamhancock/halopsa-reporting-mcp:latest"
+        "ghcr.io/adamhancock/halopsa-mcp:latest"
       ]
     }
   }
